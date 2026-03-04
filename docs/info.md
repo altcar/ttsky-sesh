@@ -9,15 +9,11 @@ You can also include images in this folder and reference them in the markdown. E
 
 ## How it works
 
-Explain how your project works
-
-idk
+This is a 7 segment LED
 
 ## How to test
 
-Explain how to use your project
-
-idk
+just run it from 1 -7 using a switch
 
 ## External hardware
 
