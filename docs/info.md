@@ -11,9 +11,13 @@ You can also include images in this folder and reference them in the markdown. E
 
 Explain how your project works
 
+idk
+
 ## How to test
 
 Explain how to use your project
+
+idk
 
 ## External hardware
 
