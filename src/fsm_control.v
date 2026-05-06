@@ -1,6 +1,13 @@
 /*
  * Copyright (c) 2024 Your Name
  * SPDX-License-Identifier: Apache-2.0
+RESET: Clear the accumulator.
+FETCH: Trigger SPI to grab a weight from external memory.
+MULTIPLY: Take ui_in (Data) $\times$ weight (from SPI).
+ACCUMULATE: Add result to the 16-bit register.
+REPEAT: Do this for $N$ inputs in the layer.
+ACTIVATE: Apply ReLU (if result is negative, set to 0).
+OUTPUT: Send 16-bit result out over the 8-bit uo_out pins in two cycles.
  */
 
 `default_nettype none
