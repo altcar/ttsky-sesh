@@ -34,8 +34,12 @@ module control_fsm (
 
         case (state)
             IDLE: begin
-                acc_clr = 1;
-                if (spi_ready) next_state = COMPUTE;
+                if (spi_ready) begin
+                    next_state = COMPUTE;
+                    acc_clr = 0;
+                end else begin
+                    acc_clr = 1;
+                end
             end
             COMPUTE: begin
                 mac_en = 1;

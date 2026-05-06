@@ -17,7 +17,7 @@ module spi_receiver (
     reg ready_sync;
 
     always @(posedge sclk or negedge rst_n) begin
-        if (rst_n) begin
+        if (!rst_n) begin
             bit_cnt <= 0;
             shift_reg <= 0;
             ready_sync <= 0;
@@ -33,9 +33,11 @@ module spi_receiver (
         end
     end
 
-        // Pulse 'ready' in the main clock domain
+    reg ready_prev;
+    // Pulse 'ready' in the main clock domain
     always @(posedge clk) begin
         weight <= shift_reg;
-        done <= ready_sync;
+        ready_prev <= ready_sync;
+        done <= ready_sync && !ready_prev;
     end
 endmodule

@@ -19,14 +19,14 @@ module tt_um_chinghey (
 
     // Internal Signals
     wire [7:0] weight_from_spi;
-    wire weight_ready, mac_en, acc_clr;
+    wire weight_ready, mac_en, acc_clr, done_pulse;
     wire [15:0] nlp_result;
 
     // 1. SPI Receiver (Uses the Bidirectional Pins)
     // uio[0] = SCLK, uio[1] = MOSI, uio[2] = CS
-    spi my_spi (
+    spi_receiver my_spi (
         .clk(clk),
-        .rst_n(!rst_n),
+        .rst_n(rst_n),
         .sclk(uio_in[0]),
         .mosi(uio_in[1]),
         .cs(uio_in[2]),
@@ -36,20 +36,23 @@ module tt_um_chinghey (
 
     control_fsm fsm_inst (
         .clk(clk),
-        .rst_n(!rst_n),
+        .rst_n(rst_n),
         .spi_ready(weight_ready),
+        .ui_in(ui_in),
         .mac_en(mac_en),
-        .acc_clr(acc_clr)
+        .acc_clr(acc_clr),
+        .done_pulse(done_pulse)
     );
 
     // 2. NPU Core
     npu_core my_npu (
         .clk(clk),
         .reset(!rst_n),
+        .clear(acc_clr),
         .input_data(ui_in),
         .weight_data(weight_from_spi),
         .enable(weight_ready),
-        .accumulator(nlp_result)
+        .out(nlp_result)
     );
 
     // 3. Output logic (Muxing the 16-bit result to 8-bit pins)
@@ -58,7 +61,7 @@ module tt_um_chinghey (
 
     // Configure Bidirectional pins: 0,1,2 are inputs (SPI), others are outputs
     assign uio_oe  = 8'b11111000; 
-    assign uio_out = 8'b0;
+    assign uio_out = {done_pulse, mac_en, 6'b0};
 
 endmodule
   // // All output pins must be assigned. If not used, assign to 0.
