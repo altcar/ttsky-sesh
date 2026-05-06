@@ -19,18 +19,27 @@ module tt_um_example (
 
     // Internal Signals
     wire [7:0] weight_from_spi;
-    wire weight_ready;
+    wire weight_ready, mac_en, acc_clr;
     wire [15:0] nlp_result;
 
     // 1. SPI Receiver (Uses the Bidirectional Pins)
     // uio[0] = SCLK, uio[1] = MOSI, uio[2] = CS
-    spi_receiver my_spi (
+    spi my_spi (
         .clk(clk),
+        .rst_n(!rst_n),
         .sclk(uio_in[0]),
         .mosi(uio_in[1]),
         .cs(uio_in[2]),
         .weight(weight_from_spi),
         .done(weight_ready)
+    );
+
+    control_fsm fsm_inst (
+        .clk(clk),
+        .rst_n(!rst_n),
+        .spi_ready(weight_ready),
+        .mac_en(mac_en),
+        .acc_clr(acc_clr)
     );
 
     // 2. NPU Core
