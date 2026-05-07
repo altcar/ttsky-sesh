@@ -34,5 +34,5 @@ The NPU computes $Y = ReLU( \sum (input_i \times weight_i) )$.
 
 ## External hardware
 
-- **SPI Source:** An external microcontroller or SPI Flash RAM to provide weight coefficients.
+- **SPI Source:** An external RP2040 microcontroller or SPI Flash RAM to provide weight coefficients.
 - **Input Driver:** Parallel 8-bit data source for input features.

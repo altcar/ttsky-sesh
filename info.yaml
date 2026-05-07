@@ -21,6 +21,8 @@ project:
     - "npu_core.v"
     - "spi.v"
     - "tt_um_chinghey.v"
+    - "cordic_core.v"
+    - "atan_lut.v"
 
 # The pinout of your project. Leave unused pins blank. DO NOT delete or add any pins.
 # This section is for the datasheet/website. Use descriptive names (e.g., RX, TX, MOSI, SCL, SEG_A, etc.).
@@ -52,8 +54,12 @@ pinout:
   uio[3]: "npu_busy" # Output to RP2040 (Handshake)
   uio[4]: "byte_sel" # Input: 0=LowByte, 1=HighByte
   uio[5]: "layer_done" # Output: Pulse when sum is finished
-  uio[6]: ""
-  uio[7]: ""
+  uio[6]: "Active Mode[0]"
+  uio[7]: "Active Mode[1]"
+# 0,0,NPU Mode (CORDIC Idle)
+# 0,1,CORDIC: SIN / COS (Circular)
+# 1,0,CORDIC: SINH / COSH (Hyperbolic)
+# 1,1,CORDIC: ATAN / ATANH (Vectoring)
 
 # Do not change!
 yaml_version: 6

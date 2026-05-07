@@ -55,13 +55,31 @@ module tt_um_chinghey (
         .out(nlp_result)
     );
 
+    wire [15:0] cordic_x, cordic_y, cordic_z;
+    wire cordic_done;
+
+    cordic_core my_cordic (
+        .clk(clk),
+        .rst_n(rst_n),
+        .mode(uio_in[7:6]),
+        .theta_in(ui_in),
+        .x_out(cordic_x),
+        .y_out(cordic_y),
+        .z_out(cordic_z),
+        .done(cordic_done)
+    );
+
+    wire [15:0] final_result;
+    assign final_result = (uio_in[7:6] == 2'b00) ? nlp_result :
+                          (uio_in[4] == 1'b0) ? cordic_x : cordic_y; // uio[4] selects X vs Y
+
     // 3. Output logic (Muxing the 16-bit result to 8-bit pins)
     // If ui_in[0] is high, show high byte; if low, show low byte
-    assign uo_out = ui_in[0] ? nlp_result[15:8] : nlp_result[7:0];
+    assign uo_out = ui_in[0] ? final_result[15:8] : final_result[7:0];
 
-    // Configure Bidirectional pins: 0,1,2 are inputs (SPI), others are outputs
-    assign uio_oe  = 8'b11111000; 
-    assign uio_out = {done_pulse, mac_en, 6'b0};
+    // Configure Bidirectional pins: 0,1,2,4,6,7 are inputs, 3,5 are outputs
+    assign uio_oe  = 8'b00101000; 
+    assign uio_out = {1'b0, 1'b0, cordic_done | done_pulse, 1'b0, mac_en, 3'b0};
 
 endmodule
   // // All output pins must be assigned. If not used, assign to 0.
