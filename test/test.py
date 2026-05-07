@@ -28,9 +28,9 @@ async def test_npu_basic(dut):
     await ClockCycles(dut.clk, 5)
 
     # 1. Clear MAC
-    dut.ui_in.value = 64 # ui_in[6] = 1 (Manual Clear)
+    dut.uio_in.value = 0b00001000 # clear=1
     await ClockCycles(dut.clk, 5)
-    dut.ui_in.value = 0
+    dut.uio_in.value = 0b00000000 # clear=0
     await ClockCycles(dut.clk, 5)
 
     # 2. Perform 5 * 10
@@ -76,6 +76,6 @@ async def test_cordic_basic(dut):
     await ClockCycles(dut.clk, 1)
     high = dut.uo_out.value.integer
     
-    cos_hw = ((high << 8) | low) / 4096.0
+    cos_hw = ((high << 8) | low) / 1024.0
     dut._log.info(f"CORDIC COS(0.5): {cos_hw:.4f}")
     assert abs(cos_hw - math.cos(theta_val/127.0)) < 0.1, f"COS failed: {cos_hw}"

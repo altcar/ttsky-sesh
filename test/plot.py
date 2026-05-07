@@ -25,20 +25,23 @@ async def hw_npu_matrix_mul(dut, A, B):
     N, M = A.shape
     M2, P = B.shape
     res = np.zeros((N, P))
-    # Start of layer: pulse clear
-    dut.ui_in.value = 64 # ui_in[6] = 1
+    
+    # Ensure uio_in starts with correct mode (NPU) and clear=0
+    # Mode NPU = 00 in bits 7:6. uio_in[3] is clear.
+    dut.uio_in.value = 0b00000000 
+    
+    # Start of layer: pulse clear on uio_in[3]
+    dut.uio_in.value = 0b00001000 # clear=1
     await ClockCycles(dut.clk, 2)
-    dut.ui_in.value = 0
+    dut.uio_in.value = 0b00000000 # clear=0
     await ClockCycles(dut.clk, 2)
 
     for i in range(N):
         for j in range(P):
-            # We must clear manually before each dot product if we want independent ones,
-            # but usually NPU accumulates. Since it's a matrix-matrix multiply,
-            # we clear before each dot product.
-            dut.ui_in.value = 64
+            # Clear before each dot product
+            dut.uio_in.value = 0b00001000
             await ClockCycles(dut.clk, 2)
-            dut.ui_in.value = 0
+            dut.uio_in.value = 0b00000000
             
             for k in range(M):
                 input_val = int(A[i, k]) & 0xFF
@@ -80,7 +83,7 @@ async def get_cordic_result(dut, theta_in, mode, select_z=False):
         high = dut.uo_out.value.integer
         val = (high << 8) | low
         if val >= 32768: val -= 65536
-        results.append(val / 4096.0)
+        results.append(val / 1024.0)
     return results # [X, Y] or [X, Z]
 
 @cocotb.test()
@@ -125,10 +128,20 @@ async def generate_plots(dut):
     # --- 2. 4x 6x6 Matrix Multiplication ---
     matrix_results = []
     for m_idx in range(4):
-        A = np.random.randint(-3, 4, (6, 6)) # Small values
-        B = np.random.randint(-3, 4, (6, 6))
+        # Generate full int8 range
+        A = np.random.randint(-128, 127, (6, 6)) 
+        B = np.random.randint(-128, 127, (6, 6))
+        
         hw_res = await hw_npu_matrix_mul(dut, A, B)
-        pd_res = np.where(A @ B > 0, A @ B, 0)
+        
+        # Pandas calculation
+        pd_res = A @ B
+        # Simulate 16-bit signed overflow
+        # Convert to 16-bit unsigned, then to 16-bit signed
+        pd_res = np.int16(np.uint16(pd_res % 65536))
+        # Apply ReLU
+        pd_res = np.where(pd_res > 0, pd_res, 0)
+        
         matrix_results.append((hw_res, pd_res))
 
     # --- 3. Plotting ---
