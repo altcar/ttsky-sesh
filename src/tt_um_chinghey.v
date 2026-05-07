@@ -71,12 +71,12 @@ module tt_um_chinghey (
 
     wire [15:0] final_result;
     assign final_result = (uio_in[7:6] == 2'b00) ? nlp_result :
-                          (uio_in[7:6] == 2'b11 && uio_in[4] == 1'b1) ? cordic_z : // Output Z in Vectoring mode if bit 4 is high
-                          (uio_in[4] == 1'b0) ? cordic_x : cordic_y; 
+                          (uio_in[7:6] == 2'b11) ? cordic_z : // Output Z in Vectoring mode
+                          (uio_in[3] == 1'b0) ? cordic_x : cordic_y; 
 
     // 3. Output logic (Muxing the 16-bit result to 8-bit pins)
-    // If ui_in[0] is high, show high byte; if low, show low byte
-    assign uo_out = ui_in[0] ? final_result[15:8] : final_result[7:0];
+    // uio_in[4] is byte_sel: 0=LowByte, 1=HighByte
+    assign uo_out = uio_in[4] ? final_result[15:8] : final_result[7:0];
 
     // Configure Bidirectional pins: 0,1,2,3,4,6,7 are inputs, 5 is output
     assign uio_oe  = 8'b00100000; 
