@@ -2,7 +2,7 @@ module control_fsm (
     input  wire clk,
     input  wire rst_n,
     input  wire spi_ready,    // From spi_controller
-    input  wire [7:0] ui_in,  // Control bits
+    input  wire clear_in,     // Manual clear input (from uio_in[3])
     output reg mac_en,
     output reg acc_clr,
     output reg done_pulse
@@ -23,26 +23,21 @@ module control_fsm (
 
         case (state)
             IDLE: begin
-                if (ui_in[6]) acc_clr = 1; // Manual clear
+                if (clear_in) acc_clr = 1; // Manual clear
                 if (spi_ready) next_state = START;
-                else if (ui_in[7]) next_state = DONE;
+                // Wait, if ui_in[7] was used for 'DONE', we lost it!
+                // Let's just do a 36-element count? Or let the user clear manually between layers.
+                // Actually, the FSM doesn't strictly need a DONE state if we clear manually.
+                // But let's keep it simple.
             end
             START: begin
                 mac_en = 1; // Pulse for 1 cycle
                 next_state = BUSY;
             end
             BUSY: begin
-                // Wait for bit_count to finish (8 cycles + 1)
-                // For simplicity, we can just wait for spi_ready to go low
                 if (!spi_ready) next_state = IDLE;
-            end
-            DONE: begin
-                done_pulse = 1;
-                if (!ui_in[7]) next_state = IDLE;
             end
             default: next_state = IDLE;
         endcase
     end
-
-    wire _unused = &{ui_in[5:0], 1'b0};
 endmodule

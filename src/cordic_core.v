@@ -8,22 +8,21 @@ module cordic_core (
     output reg [15:0] z_out,     // ATAN / ATANH
     output reg done
 );
-    // Reduced to 14-bit: [S][I][FFFFFFFFFFFF] (1 bit sign, 1 bit int, 12 bit frac)
+    // Reduced to 12-bit: [S][I][FFFFFFFFFF] (1 bit sign, 1 bit int, 10 bit frac)
     // Range is approx -2 to +1.999
-    reg signed [13:0] x, y, z;
-    reg [3:0] step; // 0 to 12 fits in 4 bits
+    reg signed [11:0] x, y, z;
+    reg [3:0] step; // 0 to 9 fits in 4 bits
     reg repeat_step;
     
     wire is_hyperbolic = (mode == 2'b10);
     wire is_vectoring  = (mode == 2'b11);
 
-    wire [15:0] current_lut_val_16;
+    wire signed [11:0] current_lut_val;
     atan_lut my_lut(
-        .step({1'b0, step}),
+        .step(step),
         .is_hyperbolic(is_hyperbolic),
-        .lut_value(current_lut_val_16)
+        .lut_value(current_lut_val)
     );
-    wire signed [13:0] current_lut_val = current_lut_val_16[13:0];
 
     reg [1:0] state;
 
@@ -41,20 +40,21 @@ module cordic_core (
             end else begin
                 case (state)
                     0: begin // Initialization
-                        // z scaling remains same (127 -> 1.0 rad = 4096 in Q.12)
-                        z <= theta_in[7] ? {6'b111111, theta_in} << 5 : {6'b000000, theta_in} << 5; 
+                        // z scaling (127 -> approx 1.0 rad = 1024 in Q2.10)
+                        // Shift by 3
+                        z <= theta_in[7] ? {4'b1111, theta_in} << 3 : {4'b0000, theta_in} << 3; 
                         repeat_step <= 0;
                         if (is_hyperbolic) begin
-                            x <= 14'h1351; // 1/K' ~ 1.2074
+                            x <= 12'h4D4; // 1/K' ~ 1.2074 * 1024 = 1236
                             y <= 0;
                             step <= 1; 
                         end else if (is_vectoring) begin
-                            x <= 14'h1000; // 1.0
-                            y <= theta_in[7] ? {6'b111111, theta_in} << 5 : {6'b000000, theta_in} << 5;
+                            x <= 12'h400; // 1.0 * 1024
+                            y <= theta_in[7] ? {4'b1111, theta_in} << 3 : {4'b0000, theta_in} << 3;
                             z <= 0;
                             step <= 0; 
                         end else begin // Circular
-                            x <= 14'h09B7; // 1/K ~ 0.6072
+                            x <= 12'h26E; // 1/K ~ 0.6072 * 1024 = 622
                             y <= 0;
                             step <= 0; 
                         end
@@ -78,7 +78,7 @@ module cordic_core (
                                 repeat_step <= 1;
                             end else begin
                                 repeat_step <= 0;
-                                if (step == 12) state <= 2;
+                                if (step == 9) state <= 2;
                                 else step <= step + 1;
                             end
                         end else begin
@@ -91,15 +91,16 @@ module cordic_core (
                                 y <= y - (x >>> step);
                                 z <= z + current_lut_val;
                             end
-                            if (step == 12) state <= 2;
+                            if (step == 9) state <= 2;
                             else step <= step + 1;
                         end
                     end
 
                     2: begin // Output Ready
-                        x_out <= { {2{x[13]}}, x }; // Sign extend to 16-bit
-                        y_out <= { {2{y[13]}}, y };
-                        z_out <= { {2{z[13]}}, z };
+                        // Sign extend to 16-bit
+                        x_out <= { {4{x[11]}}, x };
+                        y_out <= { {4{y[11]}}, y };
+                        z_out <= { {4{z[11]}}, z };
                         done <= 1;
                         state <= 0;
                     end

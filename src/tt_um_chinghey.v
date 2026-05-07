@@ -38,7 +38,7 @@ module tt_um_chinghey (
         .clk(clk),
         .rst_n(rst_n),
         .spi_ready(weight_ready),
-        .ui_in(ui_in),
+        .clear_in(uio_in[3]), // Use uio_in[3] for clear
         .mac_en(mac_en),
         .acc_clr(acc_clr),
         .done_pulse(done_pulse)
@@ -78,12 +78,12 @@ module tt_um_chinghey (
     // If ui_in[0] is high, show high byte; if low, show low byte
     assign uo_out = ui_in[0] ? final_result[15:8] : final_result[7:0];
 
-    // Configure Bidirectional pins: 0,1,2,4,6,7 are inputs, 3,5 are outputs
-    assign uio_oe  = 8'b00101000; 
-    assign uio_out = {1'b0, 1'b0, cordic_done | done_pulse, 1'b0, mac_en, 3'b0};
+    // Configure Bidirectional pins: 0,1,2,3,4,6,7 are inputs, 5 is output
+    assign uio_oe  = 8'b00100000; 
+    assign uio_out = {1'b0, 1'b0, cordic_done | done_pulse, 5'b0};
 
     // List all unused inputs to prevent warnings
-    wire _unused = &{ena, uio_in[5], uio_in[3], 1'b0};
+    wire _unused = &{ena, uio_in[5], 1'b0};
 
 endmodule
 
