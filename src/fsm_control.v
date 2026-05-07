@@ -1,24 +1,13 @@
-/*
- * Copyright (c) 2024 Your Name
- * SPDX-License-Identifier: Apache-2.0
-RESET: Clear the accumulator.
-FETCH: Trigger SPI to grab a weight from external memory.
-MULTIPLY: Take ui_in (Data) $\times$ weight (from SPI).
-ACCUMULATE: Add result to the 16-bit register.
-REPEAT: Do this for $N$ inputs in the layer.
-ACTIVATE: Apply ReLU (if result is negative, set to 0).
-OUTPUT: Send 16-bit result out over the 8-bit uo_out pins in two cycles.
- */
 module control_fsm (
     input  wire clk,
     input  wire rst_n,
     input  wire spi_ready,    // From spi_controller
-    input  wire [7:0] ui_in,  // Control bits (ui_in[7] = end of layer)
+    input  wire [7:0] ui_in,  // Control bits
     output reg mac_en,
     output reg acc_clr,
     output reg done_pulse
 );
-    typedef enum reg [1:0] {IDLE, FETCH, COMPUTE, DONE} state_t;
+    typedef enum reg [2:0] {IDLE, START, BUSY, WAIT_SPI, DONE} state_t;
     state_t state, next_state;
 
     always @(posedge clk or negedge rst_n) begin
@@ -34,22 +23,26 @@ module control_fsm (
 
         case (state)
             IDLE: begin
-                if (spi_ready) begin
-                    next_state = COMPUTE;
-                    acc_clr = 0;
-                end else begin
-                    acc_clr = 1;
-                end
+                if (ui_in[6]) acc_clr = 1; // Manual clear
+                if (spi_ready) next_state = START;
+                else if (ui_in[7]) next_state = DONE;
             end
-            COMPUTE: begin
-                mac_en = 1;
-                if (ui_in[7]) next_state = DONE; // User signals end of vector
-                else if (spi_ready) next_state = COMPUTE;
+            START: begin
+                mac_en = 1; // Pulse for 1 cycle
+                next_state = BUSY;
+            end
+            BUSY: begin
+                // Wait for bit_count to finish (8 cycles + 1)
+                // For simplicity, we can just wait for spi_ready to go low
+                if (!spi_ready) next_state = IDLE;
             end
             DONE: begin
                 done_pulse = 1;
-                next_state = IDLE;
+                if (!ui_in[7]) next_state = IDLE;
             end
+            default: next_state = IDLE;
         endcase
     end
+
+    wire _unused = &{ui_in[5:0], 1'b0};
 endmodule

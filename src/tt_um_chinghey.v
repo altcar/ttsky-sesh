@@ -71,7 +71,8 @@ module tt_um_chinghey (
 
     wire [15:0] final_result;
     assign final_result = (uio_in[7:6] == 2'b00) ? nlp_result :
-                          (uio_in[4] == 1'b0) ? cordic_x : cordic_y; // uio[4] selects X vs Y
+                          (uio_in[7:6] == 2'b11 && uio_in[4] == 1'b1) ? cordic_z : // Output Z in Vectoring mode if bit 4 is high
+                          (uio_in[4] == 1'b0) ? cordic_x : cordic_y; 
 
     // 3. Output logic (Muxing the 16-bit result to 8-bit pins)
     // If ui_in[0] is high, show high byte; if low, show low byte
@@ -81,12 +82,8 @@ module tt_um_chinghey (
     assign uio_oe  = 8'b00101000; 
     assign uio_out = {1'b0, 1'b0, cordic_done | done_pulse, 1'b0, mac_en, 3'b0};
 
-endmodule
-  // // All output pins must be assigned. If not used, assign to 0.
-  // assign uo_out  = ui_in + uio_in;  // Example: ou_out is the sum of ui_in and uio_in
-  // assign uio_out = 0;
-  // assign uio_oe  = 0;
+    // List all unused inputs to prevent warnings
+    wire _unused = &{ena, uio_in[5], uio_in[3], 1'b0};
 
-  // // List all unused inputs to prevent warnings
-  // wire _unused = &{ena, clk, rst_n, 1'b0};
+endmodule
 
