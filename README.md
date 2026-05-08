@@ -4,6 +4,11 @@
 
 - [Read the documentation for project](docs/info.md)
 
+# 3D Viewer
+[Open 3D viewer](https://gds-viewer.tinytapeout.com/?model=https://altcar.github.io/ttsky-sesh/tinytapeout.oas&pdk=sky130A)
+
+# 2D Preview
+![png](https://altcar.github.io/ttsky-sesh/gds_render.png)
 
 ## What is Tiny Tapeout?
 
